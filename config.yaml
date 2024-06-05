@@ -1,0 +1,4 @@
+fastq_dir: "/vol/rimlsfnwiz/fastq/2024-04-26_AACFNHHHV"
+genome_dir: "/vol/slrinzema/genomes/hg38"
+results: "results"
+samplesheet: "samples.tsv"
