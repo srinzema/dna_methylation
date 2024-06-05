@@ -24,6 +24,8 @@ def load_samples(sample_file: str, fastq_dir: str) -> pd.DataFrame:
 
             r2 = next(filter(lambda x: "R2" in x, fastqs))
             read2.append(r2)
+        else:
+            raise ValueError(f"Incorrect amount of FASTQS found for {fastq_dir / sample}*:\n{fastqs}")
 
     _df.insert(0, "read1", read1)
     _df.insert(1, "read2", read2)

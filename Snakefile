@@ -6,6 +6,12 @@ import pandas as pd
 configfile: "config.yaml"
 GENOME_DIR = Path(config["genome_dir"])
 RESULTS = Path(config["results"])
+BISMARK_FILES = ("BS_CT.1.bt2", "BS_CT.2.bt2", "BS_CT.3.bt2", "BS_CT.4.bt2", "BS_CT.rev.1.bt2", "BS_CT.rev.2.bt2", "genome_mfa.CT_conversion.fa")
+
+samples = utils.load_samples(config["samplesheet"], config["fastq_dir"])
+
+rule all:
+    input: expand(f"{RESULTS}/alignment/{{sample}}.fastq_bismark.bam", sample=samples.alias)
 
 
 def get_trimmed_reads(wildcards):
@@ -18,12 +24,12 @@ def get_trimmed_reads(wildcards):
 rule bismark_bowtie2:
     input:
         genome = GENOME_DIR,
-        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/{file}", file = ["BS_CT.1.bt2", "BS_CT.2.bt2", "BS_CT.3.bt2", "BS_CT.4.bt2", "BS_CT.rev.1.bt2", "BS_CT.rev.2.bt2", "genome_mfa.CT_conversion.fa"]),
-        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/{file}", file = ["BS_GA.1.bt2", "BS_GA.2.bt2", "BS_GA.3.bt2", "BS_GA.4.bt2", "BS_GA.rev.1.bt2", "BS_GA.rev.2.bt2", "genome_mfa.GA_conversion.fa"]),
+        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/{{file}}", file=BISMARK_FILES),
+        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/{{file}}", file=BISMARK_FILES),
         reads = get_trimmed_reads
     output:
-        bam = f"{RESULTS}/alignment/{sample}.fastq_bismark.bam"
-    log: f"{RESULTS}/logs/bismark_bowtie2/{sample}.log"
+        bam = f"{RESULTS}/alignment/{{sample}}.fastq_bismark.bam"
+    log: f"{RESULTS}/logs/bismark_bowtie2/{{sample}}.log"
     threads: 8
     shell:
         "bismark -N 1 -p {threads} --bowtie2 {input.genome} -q {input.reads} > {log} 2>&1"
@@ -31,8 +37,8 @@ rule bismark_bowtie2:
 rule bismark_genome_preparation:
     input: GENOME_DIR
     output: 
-        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/{file}", file = ["BS_CT.1.bt2", "BS_CT.2.bt2", "BS_CT.3.bt2", "BS_CT.4.bt2", "BS_CT.rev.1.bt2", "BS_CT.rev.2.bt2", "genome_mfa.CT_conversion.fa"]),
-        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/{file}", file = ["BS_GA.1.bt2", "BS_GA.2.bt2", "BS_GA.3.bt2", "BS_GA.4.bt2", "BS_GA.rev.1.bt2", "BS_GA.rev.2.bt2", "genome_mfa.GA_conversion.fa"])
+        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/{{file}}", file=BISMARK_FILES),
+        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/{{file}}", file=BISMARK_FILES)
     log: f"{RESULTS}/logs/bismark/genome_preparation.log"
     threads: 16
     shell: "bismark_genome_preparation --bowtie2 --parallel {threads} {input} > {log} 2>&1"
@@ -64,8 +70,8 @@ rule fastp_pe:
     threads: 2
     shell:
         """
-        fastp -w {threads} --in1 {input.read1} --in2 {input.read2} 
-        --out1 {output.out1} --out2 {output.out2} 
+        fastp -w {threads} --in1 {input.read1} --in2 {input.read2} \
+        --out1 {output.out1} --out2 {output.out2} \
         -h {output.html} -j {output.json} > {log} 2>&1
         """
 
@@ -81,7 +87,7 @@ rule fastp_se:
     threads: 2
     shell:
         """
-        fastp -w {threads} --in1 {input}
-        --out1 {output.out} 
+        fastp -w {threads} --in1 {input} \
+        --out1 {output.out} \
         -h {output.html} -j {output.json} > {log} 2>&1
         """

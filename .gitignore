@@ -1,3 +1,4 @@
 results/
+samples/
 .snakemake/
 scripts/__pycache__/
