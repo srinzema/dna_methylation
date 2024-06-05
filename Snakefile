@@ -6,7 +6,6 @@ import pandas as pd
 configfile: "config.yaml"
 GENOME_DIR = Path(config["genome_dir"])
 RESULTS = Path(config["results"])
-BISMARK_FILES = ("BS_CT.1.bt2", "BS_CT.2.bt2", "BS_CT.3.bt2", "BS_CT.4.bt2", "BS_CT.rev.1.bt2", "BS_CT.rev.2.bt2", "genome_mfa.CT_conversion.fa")
 
 samples = utils.load_samples(config["samplesheet"], config["fastq_dir"])
 
@@ -24,21 +23,29 @@ def get_trimmed_reads(wildcards):
 rule bismark_bowtie2:
     input:
         genome = GENOME_DIR,
-        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/{{file}}", file=BISMARK_FILES),
-        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/{{file}}", file=BISMARK_FILES),
+        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/BS_CT.{{ext}}.bt2", ext=[1, 2, 3, 4]),
+        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/BS_GA.{{ext}}.bt2", ext=[1, 2, 3, 4]),
         reads = get_trimmed_reads
     output:
         bam = f"{RESULTS}/alignment/{{sample}}.fastq_bismark.bam"
+    params: 
+        out = f"{RESULTS}/alignment/",
+        bismark_parallel = 8,
+        bowtie_parallel = 8
     log: f"{RESULTS}/logs/bismark_bowtie2/{{sample}}.log"
-    threads: 8
+    threads: 16
     shell:
-        "bismark -N 1 -p {threads} --bowtie2 {input.genome} -q {input.reads} > {log} 2>&1"
+        """
+        bismark -N 1 -p {params.bowtie_parallel} --parallel {params.bismark_parallel} \
+        -o {params.out} --temp_dir {params.out} \
+        --bowtie2 {input.genome} -q {input.reads} > {log} 2>&1
+        """
 
 rule bismark_genome_preparation:
     input: GENOME_DIR
     output: 
-        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/{{file}}", file=BISMARK_FILES),
-        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/{{file}}", file=BISMARK_FILES)
+        CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/BS_CT.{{ext}}.bt2", ext=[1, 2, 3, 4]),
+        GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/BS_GA.{{ext}}.bt2", ext=[1, 2, 3, 4]),
     log: f"{RESULTS}/logs/bismark/genome_preparation.log"
     threads: 16
     shell: "bismark_genome_preparation --bowtie2 --parallel {threads} {input} > {log} 2>&1"
