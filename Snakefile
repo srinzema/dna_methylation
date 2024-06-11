@@ -10,7 +10,37 @@ RESULTS = Path(config["results"])
 samples = utils.load_samples(config["samplesheet"], config["fastq_dir"])
 
 rule all:
-    input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
+    input: 
+        f"{RESULTS}/qc/multiqc/multiqc_report.html",
+        f"{RESULTS}/reports/bismark_summary_report.html",
+        expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
+        
+    # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
+
+
+rule bismark_processing_report:
+    input:
+        alignment = f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_PE_report.txt",
+        dedup = f"{RESULTS}/deduplicated/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplication_report.txt"
+    output:
+        f"{RESULTS}/reports/{{sample}}.html"
+    params: 
+        dir = f"{RESULTS}/reports",
+        filename = lambda w: f"{w.sample}.html"
+    log: f"{RESULTS}/logs/processing_report/{{sample}}.log"
+    threads: 1
+    shell: "bismark2report --dir {params.dir} --output {params.filename} --alignment_report {input.alignment} --dedup_report {input.dedup} > {log} 2>&1"
+
+
+rule bismark_summary_report:
+    input: expand(f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_pe.bam", sample=samples.alias)
+    output: 
+        f"{RESULTS}/reports/bismark_summary_report.html",
+        f"{RESULTS}/reports/bismark_summary_report.txt"
+    params: f"{RESULTS}/reports/bismark_summary_report"
+    log: f"{RESULTS}/logs/bismark_summary_report.log"
+    threads: 1
+    shell: "bismark2summary --basename {params} {input} > {log} 2>&1"
 
 
 rule bismark_methylation_extractor:
@@ -24,7 +54,9 @@ rule bismark_methylation_extractor:
 
 rule deduplicate_bismark:
     input: f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_pe.bam"
-    output: f"{RESULTS}/deduplicated/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated.bam"
+    output: 
+        bam = f"{RESULTS}/deduplicated/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated.bam",
+        report = f"{RESULTS}/deduplicated/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplication_report.txt"
     params: f"{RESULTS}/deduplicated/"
     log: f"{RESULTS}/logs/deduplicate_bismark/{{sample}}.log"
     threads: 1
@@ -45,13 +77,15 @@ rule bismark_bowtie2:
         GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/BS_GA.{{ext}}.bt2", ext=[1, 2, 3, 4]),
         reads = get_trimmed_reads
     output:
-        bam = f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_pe.bam"
+        bam = f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_pe.bam",
+        report = f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_PE_report.txt"
     params:
         working_dir = f"{RESULTS}/trimmed",
         out = f"{RESULTS}/alignment/"
     log: f"{RESULTS}/logs/bismark_bowtie2/{{sample}}.log"
     threads: 16
     shell: "bismark -N 1 -p 8 --output_dir {params.out} --bowtie2 {input.genome} -1 {input.reads[0]} -2 {input.reads[1]} > {log} 2>&1"
+
 
 rule bismark_genome_preparation:
     input: GENOME_DIR
@@ -61,6 +95,17 @@ rule bismark_genome_preparation:
     log: f"{RESULTS}/logs/bismark/genome_preparation.log"
     threads: 16
     shell: "bismark_genome_preparation --bowtie2 --parallel {threads} {input} > {log} 2>&1"
+
+rule multiqc:
+    input: 
+        jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
+        qc_dir = directory(f"{RESULTS}/qc/fastp/")
+    output:
+        f"{RESULTS}/qc/multiqc/multiqc_report.html"
+    params: f"{RESULTS}/qc/multiqc"
+    log: f"{RESULTS}/logs/multiqc.log"
+    threads: 1
+    shell: "multiqc --outdir {params} {input.qc_dir} > {log} 2>&1"
 
 # FASTP RULES
 
