@@ -1,4 +1,6 @@
+test/
 results/
 samples/
 .snakemake/
 scripts/__pycache__/
+*.fastq

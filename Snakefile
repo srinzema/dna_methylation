@@ -10,7 +10,25 @@ RESULTS = Path(config["results"])
 samples = utils.load_samples(config["samplesheet"], config["fastq_dir"])
 
 rule all:
-    input: expand(f"{RESULTS}/alignment/{{sample}}.fastq_bismark.bam", sample=samples.alias)
+    input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
+
+
+rule bismark_methylation_extractor:
+    input: f"{RESULTS}/deduplicated/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated.bam"
+    output: f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt"
+    params: f"{RESULTS}/methylation/"
+    log: f"{RESULTS}/logs/bismark_methylation_extractor/{{sample}}.log"
+    threads: 1
+    shell: "bismark_methylation_extractor {input} --no_overlap --output_dir {params} > {log} 2>&1"
+
+
+rule deduplicate_bismark:
+    input: f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_pe.bam"
+    output: f"{RESULTS}/deduplicated/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated.bam"
+    params: f"{RESULTS}/deduplicated/"
+    log: f"{RESULTS}/logs/deduplicate_bismark/{{sample}}.log"
+    threads: 1
+    shell: "deduplicate_bismark -p --output_dir {params} {input} > {log} 2>&1"
 
 
 def get_trimmed_reads(wildcards):
@@ -27,19 +45,13 @@ rule bismark_bowtie2:
         GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/BS_GA.{{ext}}.bt2", ext=[1, 2, 3, 4]),
         reads = get_trimmed_reads
     output:
-        bam = f"{RESULTS}/alignment/{{sample}}.fastq_bismark.bam"
-    params: 
-        out = f"{RESULTS}/alignment/",
-        bismark_parallel = 8,
-        bowtie_parallel = 8
+        bam = f"{RESULTS}/alignment/{{sample}}_R1.trimmed_bismark_bt2_pe.bam"
+    params:
+        working_dir = f"{RESULTS}/trimmed",
+        out = f"{RESULTS}/alignment/"
     log: f"{RESULTS}/logs/bismark_bowtie2/{{sample}}.log"
     threads: 16
-    shell:
-        """
-        bismark -N 1 -p {params.bowtie_parallel} --parallel {params.bismark_parallel} \
-        -o {params.out} --temp_dir {params.out} \
-        --bowtie2 {input.genome} -q {input.reads} > {log} 2>&1
-        """
+    shell: "bismark -N 1 -p 8 --output_dir {params.out} --bowtie2 {input.genome} -1 {input.reads[0]} -2 {input.reads[1]} > {log} 2>&1"
 
 rule bismark_genome_preparation:
     input: GENOME_DIR
