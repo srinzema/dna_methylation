@@ -99,13 +99,14 @@ rule bismark_genome_preparation:
 rule multiqc:
     input: 
         jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
-        qc_dir = directory(f"{RESULTS}/qc/fastp/")
     output:
         f"{RESULTS}/qc/multiqc/multiqc_report.html"
-    params: f"{RESULTS}/qc/multiqc"
+    params: 
+        indir = f"{RESULTS}/qc/fastp/",
+        outdir = f"{RESULTS}/qc/multiqc"
     log: f"{RESULTS}/logs/multiqc.log"
     threads: 1
-    shell: "multiqc --outdir {params} {input.qc_dir} > {log} 2>&1"
+    shell: "multiqc --outdir {params.outdir} {params.indir} > {log} 2>&1"
 
 # FASTP RULES
 
