@@ -141,7 +141,8 @@ rule multiqc:
         alignment_reports = expand(f"{RESULTS}/alignment/{{sample}}_PE_report.txt", sample=samples.alias),
         deduplication_reports = expand(f"{RESULTS}/deduplicated/{{sample}}_pe.deduplication_report.txt", sample=samples.alias),
         summary_report = f"{RESULTS}/reports/bismark_summary_report.txt",
-        coverage = f"{RESULTS}/qc/coverage_mqc.tsv"
+        coverage_reports = expand(f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt", sample=samples.alias),
+        summary_coverage = f"{RESULTS}/qc/coverage_mqc.tsv"
     output:
         f"{RESULTS}/qc/multiqc/multiqc_report.html"
     params: 
@@ -149,7 +150,7 @@ rule multiqc:
         outdir = f"{RESULTS}/qc/multiqc"
     log: f"{RESULTS}/logs/multiqc.log"
     threads: 1
-    shell: "echo {input} | tr ' ' '\n' > {params.outdir}/files.txt; multiqc --file-list {params.outdir}/files.txt --outdir {params.outdir} -v -f > {log} 2>&1"
+    shell: "printf '%s\n' {input} > {params.outdir}/files.txt; multiqc --file-list {params.outdir}/files.txt --outdir {params.outdir} -v -f > {log} 2>&1"
 
 # FASTP RULES
 
