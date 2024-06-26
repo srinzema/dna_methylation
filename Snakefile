@@ -5,8 +5,9 @@ import pandas as pd
 
 configfile: "config.yaml"
 GENOME_DIR = Path(config["genome_dir"])
+SPIKE_IN_1 = Path(config["spikein_1"])
+SPIKE_IN_2 = Path(config["spikein_2"])
 RESULTS = Path(config["results"])
-
 samples = utils.load_samples(config["samplesheet"], config["fastq_dir"])
 
 
@@ -15,7 +16,9 @@ rule all:
         f"{RESULTS}/qc/multiqc/multiqc_report.html",
         f"{RESULTS}/reports/bismark_summary_report.html",
         expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
-        
+        expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt", sample=samples.alias),
+        expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
+
     # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
 
 
@@ -43,14 +46,39 @@ rule bismark_summary_report:
     threads: 1
     shell: "bismark2summary --basename {params} {input} > {log} 2>&1"
 
+rule coverage_summary:
+    input: f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt"
+    output: f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt"
+    log: f"{RESULTS}/logs/coverage_summary/{{sample}}.log"
+    threads: 1
+    shell: "scripts/coverage_summary.sh {input} {output}"
+
+rule coverage2cytosine:
+    input:
+        genome = GENOME_DIR,
+        coverage = f"{RESULTS}/methylation/{{sample}}_pe.bismark.cov.gz"
+    output: f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt"
+    params: lambda w: f"{RESULTS}/coverage/{w.sample}"
+    log: f"{RESULTS}/logs/coverage2cytosine/{{sample}}.log"
+    threads: 1
+    shell: "coverage2cytosine --genome_folder {input.genome} -o {params} {input.coverage}"
 
 rule bismark_methylation_extractor:
-    input: f"{RESULTS}/deduplicated/{{sample}}_pe.deduplicated.bam"
-    output: f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt"
+    input:
+        genome = GENOME_DIR,
+        bam = f"{RESULTS}/deduplicated/{{sample}}_pe.deduplicated.bam"
+    output: 
+        report = f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt",
+        cov = f"{RESULTS}/methylation/{{sample}}_pe.bismark.cov.gz"
     params: f"{RESULTS}/methylation/"
     log: f"{RESULTS}/logs/bismark_methylation_extractor/{{sample}}.log"
-    threads: 1
-    shell: "bismark_methylation_extractor {input} --no_overlap --output_dir {params} > {log} 2>&1"
+    threads: 12 # This is divided by three in the command, because bismark uses three times as much cores than the specified amount. 
+    shell: #"bismark_methylation_extractor {input} --no_overlap --output_dir {params} > {log} 2>&1"
+        """
+        bismark_methylation_extractor {input.bam} --genome_folder {input.genome} \
+        --no_overlap --comprehensive --gzip --CX --cytosine_report \
+        --parallel 4 --output_dir {params} > {log} 2>&1
+        """
 
 
 rule deduplicate_bismark:
