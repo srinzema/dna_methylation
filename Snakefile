@@ -17,7 +17,7 @@ rule all:
         f"{RESULTS}/reports/bismark_summary_report.html",
         expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
         expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt", sample=samples.alias),
-        expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
+        # expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
 
     # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
 
@@ -46,12 +46,21 @@ rule bismark_summary_report:
     threads: 1
     shell: "bismark2summary --basename {params} {input} > {log} 2>&1"
 
+
+rule coverage_multiqc:
+    input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
+    output: f"{RESULTS}/qc/coverage_mqc.tsv"
+    threads: 1
+    shell: "scripts/coverage_multiqc.sh {output} {input}"
+
+
 rule coverage_summary:
     input: f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt"
     output: f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt"
     log: f"{RESULTS}/logs/coverage_summary/{{sample}}.log"
     threads: 1
     shell: "scripts/coverage_summary.sh {input} {output}"
+
 
 rule coverage2cytosine:
     input:
@@ -129,14 +138,19 @@ rule bismark_genome_preparation:
 rule multiqc:
     input: 
         jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
+        alignment_reports = expand(f"{RESULTS}/alignment/{{sample}}_PE_report.txt", sample=samples.alias),
+        deduplication_reports = expand(f"{RESULTS}/deduplicated/{{sample}}_pe.deduplication_report.txt", sample=samples.alias),
+        summary_report = f"{RESULTS}/reports/bismark_summary_report.txt",
+        coverage_reports = expand(f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt", sample=samples.alias),
+        summary_coverage = f"{RESULTS}/qc/coverage_mqc.tsv"
     output:
         f"{RESULTS}/qc/multiqc/multiqc_report.html"
     params: 
-        indir = f"{RESULTS}/qc/fastp/",
+        indir = f"{RESULTS}/qc/",
         outdir = f"{RESULTS}/qc/multiqc"
     log: f"{RESULTS}/logs/multiqc.log"
     threads: 1
-    shell: "multiqc --outdir {params.outdir} {params.indir} > {log} 2>&1"
+    shell: "printf '%s\n' {input} > {params.outdir}/files.txt; multiqc --file-list {params.outdir}/files.txt --outdir {params.outdir} -v -f > {log} 2>&1"
 
 # FASTP RULES
 
