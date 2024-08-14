@@ -19,20 +19,33 @@ rule all:
         expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt", sample=samples.alias),
         expand(f"{RESULTS}/methylation/{{sample}}.filtered.bedGraph.gz", sample=samples.alias),
         f"{RESULTS}/coverage/summary_report.tsv",
-        f"{RESULTS}/trackhub/hub.txt",
+        f"{RESULTS}/trackhub/raw/hub.txt",
+        f"{RESULTS}/trackhub/filtered/hub.txt"
 
     # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
 
 
-rule generate_trackhub:
+rule generate_trackhub_filtered:
+    input: bedgraphs = expand(f"{RESULTS}/methylation/{{sample}}.filtered.bedGraph.gz", sample=samples.alias)
+    output:
+        folder = directory(f"{RESULTS}/trackhub/filtered/"),
+        hub_file = f"{RESULTS}/trackhub/filtered/hub.txt",
+        track_file = f"{RESULTS}/trackhub/filtered/tracks/trackDb.txt",
+        genome_file = f"{RESULTS}/trackhub/filtered/genomes.txt",
+    log: f"{RESULTS}/logs/generate_trackhub_raw/trackhub.log"
+    threads: 1
+    shell: "scripts/generate_trackhub.py --output-dir {output.folder} --assembly hg38 --email slrinzema@science.ru.nl --trackfiles {input.bedgraphs} > {log} 2>&1"
+
+
+rule generate_trackhub_raw:
     input:
         bedgraphs = expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated.bedGraph.gz", sample=samples.alias)
     output:
-        folder = directory(f"{RESULTS}/trackhub"),
-        hub_file = f"{RESULTS}/trackhub/hub.txt",
-        track_file = f"{RESULTS}/trackhub/tracks/trackDb.txt",
-        genome_file = f"{RESULTS}/trackhub/genomes.txt",
-    log: f"{RESULTS}/logs/generate_trackhub/trackhub.log"
+        folder = directory(f"{RESULTS}/trackhub/raw/"),
+        hub_file = f"{RESULTS}/trackhub/raw/hub.txt",
+        track_file = f"{RESULTS}/trackhub/raw/tracks/trackDb.txt",
+        genome_file = f"{RESULTS}/trackhub/raw/genomes.txt",
+    log: f"{RESULTS}/logs/generate_trackhub_raw/trackhub.log"
     threads: 1
     shell: "scripts/generate_trackhub.py --output-dir {output.folder} --assembly hg38 --email slrinzema@science.ru.nl --trackfiles {input.bedgraphs} > {log} 2>&1"
 
