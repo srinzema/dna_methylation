@@ -97,6 +97,10 @@ rule coverage2cytosine:
 
 
 rule filter_bedgraph:
+    """ 
+    This filters the bedgraphs from rule 'bismark_methylation_extractor'.
+    It keeps all positions with a percentage methylation of 5 or higher.
+    """
     input: f"{RESULTS}/methylation/{{sample}}_pe.deduplicated.bedGraph.gz"
     output: f"{RESULTS}/methylation/{{sample}}.filtered.bedGraph.gz"
     log: f"{RESULTS}/logs/filter_bedgraph/{{sample}}.log"
