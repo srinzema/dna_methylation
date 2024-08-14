@@ -22,6 +22,10 @@ rule all:
     # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
 
 
+# rule generate_trackhub:
+#     input: 
+
+
 rule bismark_processing_report:
     input:
         alignment = f"{RESULTS}/alignment/{{sample}}_PE_report.txt",
@@ -80,13 +84,15 @@ rule coverage2cytosine:
     threads: 1
     shell: "coverage2cytosine --genome_folder {input.genome} -o {params} {input.coverage}"
 
+
 rule bismark_methylation_extractor:
     input:
         genome = GENOME_DIR,
         bam = f"{RESULTS}/deduplicated/{{sample}}_pe.deduplicated.bam"
     output: 
         report = f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt",
-        cov = f"{RESULTS}/methylation/{{sample}}_pe.bismark.cov.gz"
+        cov = f"{RESULTS}/methylation/{{sample}}_pe.deduplicated.bismark.cov.gz",
+        bedgraph = f"{RESULTS}/methylation/{{sample}}_pe.deduplicated.bedGraph.gz",
     params: f"{RESULTS}/methylation/"
     log: f"{RESULTS}/logs/bismark_methylation_extractor/{{sample}}.log"
     threads: 12 # This is divided by three in the command, because bismark uses three times as much cores than the specified amount. 
