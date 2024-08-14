@@ -17,13 +17,23 @@ rule all:
         f"{RESULTS}/reports/bismark_summary_report.html",
         expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
         expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt", sample=samples.alias),
-        f"{RESULTS}/coverage/summary_report.tsv"
+        f"{RESULTS}/coverage/summary_report.tsv",
+        f"{RESULTS}/trackhub/hub.txt",
 
     # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
 
 
-# rule generate_trackhub:
-#     input: 
+rule generate_trackhub:
+    input:
+        bedgraphs = expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated.bedGraph.gz", sample=samples.alias)
+    output:
+        folder = directory(f"{RESULTS}/trackhub"),
+        hub_file = f"{RESULTS}/trackhub/hub.txt",
+        track_file = f"{RESULTS}/trackhub/tracks/trackDb.txt",
+        genome_file = f"{RESULTS}/trackhub/genomes.txt",
+    log: f"{RESULTS}/logs/generate_trackhub/trackhub.log"
+    threads: 1
+    shell: "scripts/generate_trackhub.py --output-dir {output.folder} --assembly hg38 --email slrinzema@science.ru.nl --trackfiles {input.bedgraphs} > {log} 2>&1"
 
 
 rule bismark_processing_report:
