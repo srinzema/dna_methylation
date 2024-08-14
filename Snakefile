@@ -17,7 +17,7 @@ rule all:
         f"{RESULTS}/reports/bismark_summary_report.html",
         expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
         expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt", sample=samples.alias),
-        # expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
+        f"{RESULTS}/coverage/summary_report.tsv"
 
     # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
 
@@ -55,11 +55,19 @@ rule coverage_multiqc:
 
 
 rule coverage_summary:
+    input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
+    output: f"{RESULTS}/coverage/summary_report.tsv"
+    log: f"{RESULTS}/logs/coverage_table/coverage_table.log"
+    threads: 1
+    shell: "scripts/coverage_summary.py {output} {input} > {log} 2>&1"
+
+
+rule coverage_table:
     input: f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt"
     output: f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt"
-    log: f"{RESULTS}/logs/coverage_summary/{{sample}}.log"
+    log: f"{RESULTS}/logs/coverage_table/{{sample}}.log"
     threads: 1
-    shell: "scripts/coverage_summary.sh {input} {output}"
+    shell: "scripts/coverage_table.sh {input} {output} > {log} 2>&1"
 
 
 rule coverage2cytosine:
