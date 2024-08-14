@@ -17,6 +17,7 @@ rule all:
         f"{RESULTS}/reports/bismark_summary_report.html",
         expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
         expand(f"{RESULTS}/methylation/{{sample}}_pe.deduplicated_splitting_report.txt", sample=samples.alias),
+        expand(f"{RESULTS}/methylation/{{sample}}.filtered.bedGraph.gz", sample=samples.alias),
         f"{RESULTS}/coverage/summary_report.tsv",
         f"{RESULTS}/trackhub/hub.txt",
 
@@ -93,6 +94,13 @@ rule coverage2cytosine:
     log: f"{RESULTS}/logs/coverage2cytosine/{{sample}}.log"
     threads: 1
     shell: "coverage2cytosine --genome_folder {input.genome} -o {params} {input.coverage}"
+
+
+rule filter_bedgraph:
+    input: f"{RESULTS}/methylation/{{sample}}_pe.deduplicated.bedGraph.gz"
+    output: f"{RESULTS}/methylation/{{sample}}.filtered.bedGraph.gz"
+    log: f"{RESULTS}/logs/filter_bedgraph/{{sample}}.log"
+    shell: "zcat {input} | awk -F'\t' '$4 >= 5' | gzip > {output} 2> {log}"
 
 
 rule bismark_methylation_extractor:

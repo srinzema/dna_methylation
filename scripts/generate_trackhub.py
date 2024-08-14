@@ -69,7 +69,7 @@ with open(track_directory / "trackDb.txt", "w") as track_file:
         track_file.write(f"shortLabel {track_name.replace('_', '')}\n")
         track_file.write(f"longLabel {track_name}\n")
         track_file.write("visibility full\n")
-        track_file.write("color 0,0,255")
+        track_file.write("color 0,0,255\n\n")
 
 
 # Make genomes.txt
