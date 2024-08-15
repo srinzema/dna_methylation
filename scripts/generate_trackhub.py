@@ -82,6 +82,4 @@ with open(trackdb, "w") as file:
 
         print(f" - Unpacking {trackfile.name} to {assembly_dir}")
         new_location = assembly_dir / trackfile.name.replace(".gz", "")
-        with gzip.open(trackfile, "rb") as f_in:
-            with open(new_location, "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
+        shutil.copy(trackfile, new_location)
