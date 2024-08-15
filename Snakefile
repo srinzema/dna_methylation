@@ -30,9 +30,9 @@ rule generate_trackhub_filtered:
     output:
         folder = directory(f"{RESULTS}/trackhub/filtered/"),
         hub_file = f"{RESULTS}/trackhub/filtered/hub.txt",
-        track_file = f"{RESULTS}/trackhub/filtered/tracks/trackDb.txt",
+        track_file = f"{RESULTS}/trackhub/filtered/hg38/trackDb.txt",
         genome_file = f"{RESULTS}/trackhub/filtered/genomes.txt",
-    log: f"{RESULTS}/logs/generate_trackhub_raw/trackhub.log"
+    log: f"{RESULTS}/logs/generate_trackhub_filtered/trackhub.log"
     threads: 1
     shell: "scripts/generate_trackhub.py --output-dir {output.folder} --assembly hg38 --email slrinzema@science.ru.nl --trackfiles {input.bedgraphs} > {log} 2>&1"
 
@@ -43,7 +43,7 @@ rule generate_trackhub_raw:
     output:
         folder = directory(f"{RESULTS}/trackhub/raw/"),
         hub_file = f"{RESULTS}/trackhub/raw/hub.txt",
-        track_file = f"{RESULTS}/trackhub/raw/tracks/trackDb.txt",
+        track_file = f"{RESULTS}/trackhub/raw/hg38/trackDb.txt",
         genome_file = f"{RESULTS}/trackhub/raw/genomes.txt",
     log: f"{RESULTS}/logs/generate_trackhub_raw/trackhub.log"
     threads: 1
