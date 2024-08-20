@@ -1,6 +1,6 @@
 fastq_dir: "samples"
 genome_dir: "/vol/slrinzema/genomes/hg38"
-results: "results"
+results: "results_test"
 samplesheet: "samples.tsv"
 
 

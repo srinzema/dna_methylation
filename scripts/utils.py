@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 
+samples = None
 
 def load_samples(sample_file: str, fastq_dir: str) -> pd.DataFrame:
     _df = pd.read_table(sample_file).set_index("samples", drop=True)
@@ -30,3 +31,14 @@ def load_samples(sample_file: str, fastq_dir: str) -> pd.DataFrame:
     _df.insert(0, "read1", read1)
     _df.insert(1, "read2", read2)
     return _df
+
+def original_read_1(wildcards):
+    alias = wildcards.sample
+    sample_info = samples.loc[samples["alias"] == alias]
+    return sample_info.read1.iloc[0]
+
+
+def original_read_2(wildcards):
+    alias = wildcards.sample
+    sample_info = samples.loc[samples["alias"] == alias]
+    return sample_info.read2.iloc[0]
