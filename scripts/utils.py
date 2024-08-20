@@ -45,6 +45,7 @@ def original_read_2(wildcards):
     sample_info = samples.loc[samples["alias"] == alias]
     return sample_info.read2.iloc[0]
 
+
 def get_trimmed_reads(wildcards):
     sample_info = samples.loc[samples["alias"] == wildcards.sample].iloc[0]
     if pd.isna(sample_info["read2"]): # SE sample
