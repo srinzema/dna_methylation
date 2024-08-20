@@ -8,6 +8,7 @@ GENOME_DIR = Path(config["genome_dir"])
 RESULTS = Path(config["results"])
 samples = utils.load_samples(config["samplesheet"], config["fastq_dir"])
 utils.samples = samples
+utils.config = config
 
 # TODO; get this from config, maybe extra file?
 filter_genes = ["chr1", "chr10", "chr11", "chr12", "chr13", "chr14", "chr14_GL000009v2_random", "chr14_GL000194v1_random", "chr14_KI270722v1_random", "chr14_KI270726v1_random", "chr15", "chr15_KI270727v1_random", "chr16", "chr16_KI270728v1_random", "chr17", "chr17_GL000205v2_random", "chr18", "chr19", "chr1_KI270706v1_random", "chr1_KI270708v1_random", "chr1_KI270711v1_random", "chr1_KI270712v1_random", "chr1_KI270713v1_random", "chr2", "chr20", "chr21", "chr22", "chr22_KI270731v1_random", "chr22_KI270733v1_random", "chr3", "chr3_GL000221v1_random", "chr4", "chr4_GL000008v2_random", "chr5", "chr6", "chr7", "chr8", "chr9", "chr9_KI270718v1_random", "chr9_KI270719v1_random", "chr9_KI270720v1_random", "chrM", "chrUn_GL000195v1", "chrUn_GL000213v1", "chrUn_GL000214v1", "chrUn_GL000218v1", "chrUn_GL000219v1", "chrUn_GL000220v1", "chrUn_GL000224v1", "chrUn_KI270442v1", "chrUn_KI270741v1", "chrUn_KI270742v1", "chrUn_KI270743v1", "chrUn_KI270744v1", "chrUn_KI270745v1", "chrUn_KI270746v1", "chrUn_KI270748v1", "chrUn_KI270750v1", "chrUn_KI270751v1", "chrUn_KI270754v1", "chrUn_KI270755v1", "chrX", "chrY"]
@@ -23,8 +24,8 @@ rule all:
         expand(f"{RESULTS}/trackhub/hg38/{{sample}}.filtered.bigwig", sample=samples.alias),
         f"{RESULTS}/trackhub/hub.txt"
 
-### Trackhub Generation ###
 
+### Trackhub Generation ###
 rule generate_trackhub:
     input: expand(f"{RESULTS}/trackhub/hg38/{{sample}}.filtered.bigwig", sample=samples.alias),
     output:
@@ -56,7 +57,6 @@ rule filter_and_sort_bedgraph:
 
 
 ### Report Generation ###
-
 rule multiqc:
     input: 
         jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
@@ -108,7 +108,6 @@ rule bismark_summary_report:
 
 
 ### Methylation Analysis ###
-
 rule coverage_summary:
     input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
     output: f"{RESULTS}/coverage/summary_report.tsv"
@@ -155,7 +154,6 @@ rule bismark_methylation_extractor:
         """
 
 ### Alignment and Deduplication ###
-
 rule deduplicate_bismark:
     input: f"{RESULTS}/alignment/{{sample}}_pe.bam"
     output: 
@@ -167,19 +165,12 @@ rule deduplicate_bismark:
     shell: "deduplicate_bismark -p --output_dir {params} {input} > {log} 2>&1"
 
 
-def get_trimmed_reads(wildcards):
-    sample_info = samples.loc[samples["alias"] == wildcards.sample].iloc[0]
-    if pd.isna(sample_info["read2"]): # SE sample
-        return [f"{RESULTS}/trimmed/{wildcards.sample}.trimmed.fastq.gz"]
-    return [f"{RESULTS}/trimmed/{wildcards.sample}_R1.trimmed.fastq.gz", f"{RESULTS}/trimmed/{wildcards.sample}_R2.trimmed.fastq.gz"]
-
-
 rule bismark_bowtie2:
     input:
         CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/BS_CT.{{n}}.bt2", n=[1, 2, 3, 4]),
         GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/BS_GA.{{n}}.bt2", n=[1, 2, 3, 4]),
         genome = GENOME_DIR,
-        reads = get_trimmed_reads
+        reads = utils.get_trimmed_reads
     output:
         bam = f"{RESULTS}/alignment/{{sample}}_pe.bam",
         report = f"{RESULTS}/alignment/{{sample}}_PE_report.txt"
@@ -202,10 +193,6 @@ rule bismark_genome_preparation:
 
 
 ### Read Trimming and QC ###
-
-
-
-
 rule fastp_pe:
     input:
         read1 = utils.original_read_1,
