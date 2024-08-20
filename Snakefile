@@ -23,6 +23,7 @@ rule all:
         expand(f"{RESULTS}/trackhub/hg38/{{sample}}.filtered.bigwig", sample=samples.alias),
         f"{RESULTS}/trackhub/hub.txt"
 
+### Trackhub Generation ###
 
 rule generate_trackhub:
     input: expand(f"{RESULTS}/trackhub/hg38/{{sample}}.filtered.bigwig", sample=samples.alias),
@@ -54,6 +55,33 @@ rule filter_and_sort_bedgraph:
     shell: "zcat {input} | grep '{params.filter}' | sort -k1,1 -k2,2n > {output}"
 
 
+### Report Generation ###
+
+rule multiqc:
+    input: 
+        jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
+        alignment_reports = expand(f"{RESULTS}/alignment/{{sample}}_PE_report.txt", sample=samples.alias),
+        deduplication_reports = expand(f"{RESULTS}/deduplicated/{{sample}}_pe.deduplication_report.txt", sample=samples.alias),
+        summary_report = f"{RESULTS}/reports/bismark_summary_report.txt",
+        coverage_reports = expand(f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt", sample=samples.alias),
+        summary_coverage = f"{RESULTS}/qc/coverage_mqc.tsv"
+    output:
+        f"{RESULTS}/qc/multiqc/multiqc_report.html"
+    params: 
+        indir = f"{RESULTS}/qc/",
+        outdir = f"{RESULTS}/qc/multiqc"
+    log: f"{RESULTS}/logs/multiqc.log"
+    threads: 1
+    shell: "printf '%s\n' {input} > {params.outdir}/files.txt; multiqc --file-list {params.outdir}/files.txt --outdir {params.outdir} -v -f > {log} 2>&1"
+
+
+rule coverage_multiqc:
+    input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
+    output: f"{RESULTS}/qc/coverage_mqc.tsv"
+    threads: 1
+    shell: "scripts/coverage_multiqc.sh {output} {input}"
+
+
 rule bismark_processing_report:
     input:
         alignment = f"{RESULTS}/alignment/{{sample}}_PE_report.txt",
@@ -79,12 +107,7 @@ rule bismark_summary_report:
     shell: "bismark2summary --basename {params} {input} > {log} 2>&1"
 
 
-rule coverage_multiqc:
-    input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
-    output: f"{RESULTS}/qc/coverage_mqc.tsv"
-    threads: 1
-    shell: "scripts/coverage_multiqc.sh {output} {input}"
-
+### Methylation Analysis ###
 
 rule coverage_summary:
     input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
@@ -131,6 +154,7 @@ rule bismark_methylation_extractor:
         --parallel 4 --output_dir {params} > {log} 2>&1
         """
 
+### Alignment and Deduplication ###
 
 rule deduplicate_bismark:
     input: f"{RESULTS}/alignment/{{sample}}_pe.bam"
@@ -177,24 +201,7 @@ rule bismark_genome_preparation:
     shell: "bismark_genome_preparation --bowtie2 --parallel {threads} {input} > {log} 2>&1"
 
 
-rule multiqc:
-    input: 
-        jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
-        alignment_reports = expand(f"{RESULTS}/alignment/{{sample}}_PE_report.txt", sample=samples.alias),
-        deduplication_reports = expand(f"{RESULTS}/deduplicated/{{sample}}_pe.deduplication_report.txt", sample=samples.alias),
-        summary_report = f"{RESULTS}/reports/bismark_summary_report.txt",
-        coverage_reports = expand(f"{RESULTS}/coverage/{{sample}}.coverage.CpG_report.txt", sample=samples.alias),
-        summary_coverage = f"{RESULTS}/qc/coverage_mqc.tsv"
-    output:
-        f"{RESULTS}/qc/multiqc/multiqc_report.html"
-    params: 
-        indir = f"{RESULTS}/qc/",
-        outdir = f"{RESULTS}/qc/multiqc"
-    log: f"{RESULTS}/logs/multiqc.log"
-    threads: 1
-    shell: "printf '%s\n' {input} > {params.outdir}/files.txt; multiqc --file-list {params.outdir}/files.txt --outdir {params.outdir} -v -f > {log} 2>&1"
-
-# FASTP RULES
+### Read Trimming and QC ###
 
 def original_read_1(wildcards):
     alias = wildcards.sample
