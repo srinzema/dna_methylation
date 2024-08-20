@@ -5,15 +5,12 @@ import pandas as pd
 
 configfile: "config.yaml"
 GENOME_DIR = Path(config["genome_dir"])
-
-# TODO; remove all references to SPIKE_IN_* in _ALL_ files
-SPIKE_IN_1 = Path(config["spikein_1"])
-SPIKE_IN_2 = Path(config["spikein_2"])
 RESULTS = Path(config["results"])
 samples = utils.load_samples(config["samplesheet"], config["fastq_dir"])
 
 # TODO; get this from config, maybe extra file?
 filter_genes = ["chr1", "chr10", "chr11", "chr12", "chr13", "chr14", "chr14_GL000009v2_random", "chr14_GL000194v1_random", "chr14_KI270722v1_random", "chr14_KI270726v1_random", "chr15", "chr15_KI270727v1_random", "chr16", "chr16_KI270728v1_random", "chr17", "chr17_GL000205v2_random", "chr18", "chr19", "chr1_KI270706v1_random", "chr1_KI270708v1_random", "chr1_KI270711v1_random", "chr1_KI270712v1_random", "chr1_KI270713v1_random", "chr2", "chr20", "chr21", "chr22", "chr22_KI270731v1_random", "chr22_KI270733v1_random", "chr3", "chr3_GL000221v1_random", "chr4", "chr4_GL000008v2_random", "chr5", "chr6", "chr7", "chr8", "chr9", "chr9_KI270718v1_random", "chr9_KI270719v1_random", "chr9_KI270720v1_random", "chrM", "chrUn_GL000195v1", "chrUn_GL000213v1", "chrUn_GL000214v1", "chrUn_GL000218v1", "chrUn_GL000219v1", "chrUn_GL000220v1", "chrUn_GL000224v1", "chrUn_KI270442v1", "chrUn_KI270741v1", "chrUn_KI270742v1", "chrUn_KI270743v1", "chrUn_KI270744v1", "chrUn_KI270745v1", "chrUn_KI270746v1", "chrUn_KI270748v1", "chrUn_KI270750v1", "chrUn_KI270751v1", "chrUn_KI270754v1", "chrUn_KI270755v1", "chrX", "chrY"]
+
 
 rule all:
     input: 
@@ -26,9 +23,7 @@ rule all:
         expand(f"{RESULTS}/trackhub/hg38/{{sample}}.filtered.bigwig", sample=samples.alias),
         f"{RESULTS}/trackhub/hub.txt"
 
-    # input: expand(f"{RESULTS}/methylation/{{sample}}_R1.trimmed_bismark_bt2_pe.deduplicated_splitting_report.txt", sample=samples.alias)
 
-# TODO; convert to bedGraph to bigwigs with https://anaconda.org/iuc/ucsc_tools and display those.
 rule generate_trackhub:
     input: expand(f"{RESULTS}/trackhub/hg38/{{sample}}.filtered.bigwig", sample=samples.alias),
     output:
@@ -57,18 +52,6 @@ rule filter_and_sort_bedgraph:
     params: filter = "\|".join(filter_genes)
     log: f"{RESULTS}/logs/sort_bedgraph/{{sample}}.log"
     shell: "zcat {input} | grep '{params.filter}' | sort -k1,1 -k2,2n > {output}"
-
-
-# rule filter_bedgraph:
-#     """ 
-#     This filters the bedgraphs from rule 'bismark_methylation_extractor'.
-#     It keeps all positions with a percentage methylation of 5 or higher.
-#     """
-#     input: f"{RESULTS}/methylation/{{sample}}_pe.deduplicated.bedGraph.gz"
-#     output: f"{RESULTS}/methylation/{{sample}}.filtered.bedGraph.gz"
-    
-#     log: f"{RESULTS}/logs/filter_bedgraph/{{sample}}.log"
-#     shell: "zcat {input} | grep '{params.genes}' | awk -F'\t' '$4 >= 5' | gzip > {output} 2> {log}"
 
 
 rule bismark_processing_report:
