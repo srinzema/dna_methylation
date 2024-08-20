@@ -73,13 +73,12 @@ with open(trackdb, "w") as file:
         print(f" - Adding {trackfile.name} as {track_name}")
 
         file.write(f"track {track_name}\n")
-        file.write("type bedGraph\n")
+        file.write("type bigWig\n")
         file.write(f"bigDataUrl {trackfile.name.replace('.gz', '')}\n")
         file.write(f"shortLabel {track_name}\n")
         file.write(f"longLabel {track_name}\n")
         file.write("visibility full\n")
         file.write("\n")
 
-        print(f" - Unpacking {trackfile.name} to {assembly_dir}")
-        new_location = assembly_dir / trackfile.name.replace(".gz", "")
-        shutil.copy(trackfile, new_location)
+        # print(f" - Unpacking {trackfile.name} to {assembly_dir}")
+        # shutil.copy(trackfile, new_location)

@@ -1,5 +1,5 @@
 fastq_dir: "samples"
-genome_dir: "/scratch/slrinzema/dna_methylation/test/hg38"
+genome_dir: "/vol/slrinzema/genomes/hg38"
 results: "results"
 samplesheet: "samples.tsv"
 
