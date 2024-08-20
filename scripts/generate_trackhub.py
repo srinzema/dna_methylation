@@ -79,6 +79,3 @@ with open(trackdb, "w") as file:
         file.write(f"longLabel {track_name}\n")
         file.write("visibility full\n")
         file.write("\n")
-
-        # print(f" - Unpacking {trackfile.name} to {assembly_dir}")
-        # shutil.copy(trackfile, new_location)
