@@ -10,6 +10,7 @@ utils.config = config
 
 rule multiqc:
     "Makes a MultiqC."
+
     input: 
         jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
         alignment_reports = expand(f"{RESULTS}/alignment/{{sample}}_PE_report.txt", sample=samples.alias),
@@ -29,6 +30,7 @@ rule multiqc:
 
 rule coverage_multiqc:
     "Prepare a coverage table for the rule coverage_summary using by multiqc."
+    
     input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
     output: f"{RESULTS}/qc/coverage_mqc.tsv"
     threads: 1
