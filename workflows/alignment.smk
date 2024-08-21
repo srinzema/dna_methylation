@@ -8,7 +8,12 @@ utils.samples = samples
 utils.config = config
 
 
-rule deduplicate_bismark:
+rule bismark_deduplicate:
+    """
+    Deduplicates the BAM file from the bismark_bowtie2 rule. 
+    Removes all but one read that align to the exact same position & orientation.
+    """
+
     input: f"{RESULTS}/alignment/{{sample}}_pe.bam"
     output: 
         bam = f"{RESULTS}/deduplicated/{{sample}}_pe.deduplicated.bam",
@@ -20,6 +25,8 @@ rule deduplicate_bismark:
 
 
 rule bismark_bowtie2:
+    "Runs bismark using bowtie2 on the prepared genome."
+
     input:
         CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/BS_CT.{{n}}.bt2", n=[1, 2, 3, 4]),
         GA = expand(f"{GENOME_DIR}/Bisulfite_Genome/GA_conversion/BS_GA.{{n}}.bt2", n=[1, 2, 3, 4]),
@@ -37,6 +44,8 @@ rule bismark_bowtie2:
 
 
 rule bismark_genome_preparation:
+    "Prepares the genome to be used by Bismark."
+
     input: GENOME_DIR
     output:
         CT = expand(f"{GENOME_DIR}/Bisulfite_Genome/CT_conversion/BS_CT.{{n}}.bt2", n=[1, 2, 3, 4]),
