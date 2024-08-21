@@ -32,7 +32,7 @@ rule coverage2cytosine:
     params: lambda w: f"{RESULTS}/coverage/{w.sample}"
     log: f"{RESULTS}/logs/coverage2cytosine/{{sample}}.log"
     threads: 1
-    shell: "coverage2cytosine --genome_folder {input.genome} -o {params} {input.coverage}"
+    shell: "coverage2cytosine --genome_folder {input.genome} -o {params} {input.coverage} > {log} 2>&1"
 
 
 rule bismark_methylation_extractor:
