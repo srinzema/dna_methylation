@@ -9,6 +9,7 @@ utils.config = config
 
 
 rule multiqc:
+    "Makes a MultiqC."
     input: 
         jsons = expand(f"{RESULTS}/qc/fastp/{{sample}}.json", sample=samples.alias),
         alignment_reports = expand(f"{RESULTS}/alignment/{{sample}}_PE_report.txt", sample=samples.alias),
@@ -27,13 +28,29 @@ rule multiqc:
 
 
 rule coverage_multiqc:
+    "Prepare a coverage table for the rule coverage_summary using by multiqc."
     input: expand(f"{RESULTS}/coverage/{{sample}}.coverage.summary.txt", sample=samples.alias)
     output: f"{RESULTS}/qc/coverage_mqc.tsv"
     threads: 1
     shell: "scripts/coverage_multiqc.sh {output} {input}"
 
 
-rule bismark_processing_report:
+rule bismark2summary:
+    "Summarizes an overview of all alignments."
+
+    input: expand(f"{RESULTS}/alignment/{{sample}}_pe.bam", sample=samples.alias)
+    output: 
+        f"{RESULTS}/reports/bismark_summary_report.html",
+        f"{RESULTS}/reports/bismark_summary_report.txt"
+    params: f"{RESULTS}/reports/bismark_summary_report"
+    log: f"{RESULTS}/logs/bismark_summary_report.log"
+    threads: 1
+    shell: "bismark2summary --basename {params} {input} > {log} 2>&1"
+
+
+rule bismark2report:
+    "Generates a HTML report on a single sample."
+
     input:
         alignment = f"{RESULTS}/alignment/{{sample}}_PE_report.txt",
         dedup = f"{RESULTS}/deduplicated/{{sample}}_pe.deduplication_report.txt"
@@ -45,14 +62,3 @@ rule bismark_processing_report:
     log: f"{RESULTS}/logs/processing_report/{{sample}}.log"
     threads: 1
     shell: "bismark2report --dir {params.dir} --output {params.filename} --alignment_report {input.alignment} --dedup_report {input.dedup} > {log} 2>&1"
-
-
-rule bismark_summary_report:
-    input: expand(f"{RESULTS}/alignment/{{sample}}_pe.bam", sample=samples.alias)
-    output: 
-        f"{RESULTS}/reports/bismark_summary_report.html",
-        f"{RESULTS}/reports/bismark_summary_report.txt"
-    params: f"{RESULTS}/reports/bismark_summary_report"
-    log: f"{RESULTS}/logs/bismark_summary_report.log"
-    threads: 1
-    shell: "bismark2summary --basename {params} {input} > {log} 2>&1"
