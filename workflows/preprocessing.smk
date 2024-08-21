@@ -8,6 +8,8 @@ utils.config = config
 
 
 rule fastp_pe:
+    "Runs fastp on a paired-end sample."
+
     input:
         read1 = utils.original_read_1,
         read2 = utils.original_read_2,
@@ -27,6 +29,8 @@ rule fastp_pe:
 
 
 rule fastp_se:
+    "Runs fastp on a single-end sample."
+
     input: utils.original_read_1
     output:
         json = f"{RESULTS}/qc/fastp/{{sample}}.json",
