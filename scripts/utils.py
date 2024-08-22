@@ -4,6 +4,7 @@ import pandas as pd
 samples = None
 config = None
 
+
 def load_samples(sample_file: str, fastq_dir: str) -> pd.DataFrame:
     _df = pd.read_table(sample_file).set_index("samples", drop=True)
     if "alias" not in _df.columns:
@@ -27,7 +28,9 @@ def load_samples(sample_file: str, fastq_dir: str) -> pd.DataFrame:
             r2 = next(filter(lambda x: "R2" in x, fastqs))
             read2.append(r2)
         else:
-            raise ValueError(f"Incorrect amount of FASTQS found for {fastq_dir / sample}*:\n{fastqs}")
+            raise ValueError(
+                f"Incorrect amount of FASTQS found for {fastq_dir / sample}*:\n{fastqs}"
+            )
 
     _df.insert(0, "read1", read1)
     _df.insert(1, "read2", read2)
@@ -48,6 +51,11 @@ def original_read_2(wildcards):
 
 def get_trimmed_reads(wildcards):
     sample_info = samples.loc[samples["alias"] == wildcards.sample].iloc[0]
-    if pd.isna(sample_info["read2"]): # SE sample
-        return [f"{config['results']}/trimmed/{wildcards.sample}.trimmed.fastq.gz"]
-    return [f"{config['results']}/trimmed/{wildcards.sample}_R1.trimmed.fastq.gz", f"{config['results']}/trimmed/{wildcards.sample}_R2.trimmed.fastq.gz"]
+    if pd.isna(sample_info["read2"]):  # SE sample
+        return [
+            f"{config['results']}/preprocessing/{wildcards.sample}.trimmed.fastq.gz"
+        ]
+    return [
+        f"{config['results']}/preprocessing/{wildcards.sample}_R1.trimmed.fastq.gz",
+        f"{config['results']}/preprocessing/{wildcards.sample}_R2.trimmed.fastq.gz",
+    ]
