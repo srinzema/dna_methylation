@@ -17,9 +17,19 @@ utils.samples = samples
 utils.config = config
 
 
-rule all:
-    input: 
+def check_input(wildcards):
+    input = [
         f"{RESULTS}/qc/multiqc/multiqc_report.html",
-        expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
         f"{RESULTS}/coverage/summary_report.tsv",
-        f"{RESULTS}/trackhub/hub.txt"
+    ]
+
+    if config["trackhub"]:
+        input.append(f"{RESULTS}/trackhub/hub.txt")
+    print(input)
+    return input
+
+
+rule all:
+    input:
+        expand(f"{RESULTS}/reports/{{sample}}.html", sample=samples.alias),
+        check_input

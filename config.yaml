@@ -2,3 +2,4 @@ fastq_dir: "samples"
 genome_dir: "/vol/slrinzema/genomes/hg38"
 results: "results_test"
 samplesheet: "samples.tsv"
+trackhub: false
